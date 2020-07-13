@@ -1,50 +1,77 @@
-// read data from JSON file (currently not working - 404 ERROR when launched)
-function dataplot() {
-    d3.json("data/samples.json", function(samples) {
+function buildMetaData(samples) {
 
-        console.log(samples);
+    url = '../data/samples.json';
+    //adding the sample data
+    d3.json(url).then((data) => {
+        var PANEL = d3.select("#sample-metadata");
+        //
+        Object.entries(data).forEach(([key, value]) => {
+            PANEL.append("h5").text(`${key}:${value}`);
+        })
+        buildGauge(data.WFREQ);
+    })
+}
 
-        //get the data need from the JSON file - still not able to vie any data due to 404 error 
+function createCharts(sample) {
+    d3.json(`url`).then((data) => {
 
+        const otu_ids = data.otu_ids;
+        const otu_labels = data.otu_labels;
+        const sample_values = data.sample_values;
 
-        var samp_value = samples.sample_values;
-        var oti_value = samples.otu_ids;
-        var otu_labels = samples.otu_labels;
+        let bubbleLayout = {
+            margin: { t: 0 },
+            hovermode: "closests",
+            xaxis: { title: "OTU ID" }
+        }
 
-        var trace1 = {
-            type: "bar",
-            x: samp_value,
-            y: oti_value,
-            labels: otu_label,
-            orientation: 'h',
-
-        };
-        //bubble map
-
-        var trace2 = {
+        let bubbleData = [{
             x: otu_ids,
             y: sample_values,
-            mode: otu_ids,
+            text: otu_labels,
+            mode: "markers",
             marker: {
-                size: sample_values
+                size: sample_values,
+                color: otu_ids,
             }
+        }]
+
+        Plotly.plot("bubble", bubbleData, bubbleLayout);
+        let pieData = [{
+            values: sample_values.slice(0, 10),
+            labels: otu_ids.slice(0, 10),
+            hovertext: otu_labels.slice(0, 10),
+            hoverinfo: "hovertext",
+            type: "pie"
+        }];
+
+        let pieLayout = {
+            margin: { t: 0, l: 0 }
         };
 
-        var data2 = [trace2];
-
-        var layout = {
-            title: 'Sample Data',
-            showlegend: false,
-            height: 600,
-            width: 600
-        };
-
-
-        Plotly.newPlot('selDataset', data);
-
-        Plotly.newPlot('sample-metadata', data2, layout);
-
-    });
-
-
+        Plotly.plot("pie", pieData, pieLayout)
+    })
 }
+
+function init() {
+
+    var selector = d3.select("#selDataset");
+    d3.json("/names").then((sampleNames) => {
+        sampleNames.forEach((sample) => {
+            selector
+                .append("option")
+                .text(sample)
+                .property("value", sample);
+        });
+        const firstSample = sampleNames[0];
+        buildCharts(firstSample);
+        buildMetadata(firstSample);
+    });
+}
+
+function optionChanged(newSample) {
+    buildCharts(newSample);
+    buildMetadata(newSample);
+}
+
+init();
